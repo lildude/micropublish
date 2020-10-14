@@ -14,6 +14,12 @@ module Micropublish
       end
     end
 
+    # TODO: memoize getting the site config to reduce unnecessary roundtrips
+    def destinations
+      response = HTTParty.get(@micropub, query: { q: 'config' }, headers: headers)
+      JSON.parse(response.body)['destination'] || []
+    end
+
     def syndicate_to(subtype = nil)
       try_syndicate_to({ q: 'syndicate-to', 'post-type': subtype }) ||
         try_syndicate_to({ q: 'config' })

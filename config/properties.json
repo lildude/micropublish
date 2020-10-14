@@ -15,13 +15,15 @@
     "mp-slug",
     "checkin",
     "post-status",
-    "visibility"
+    "visibility",
+    "mp-destination"
   ],
   "default": [
     "category",
     "post-status",
     "visibility",
     "mp-syndicate-to",
+    "mp-destination",
     "mp-slug"
   ],
   "types": {
@@ -33,7 +35,8 @@
           "content"
         ],
         "required": [
-          "content"
+          "content",
+          "mp-destination"
         ]
       },
       "article": {
