@@ -1,5 +1,5 @@
+# frozen_string_literal: true
+
 module Micropublish
-
-  VERSION = "2.3.0"
-
+  VERSION = '2.3.0'
 end

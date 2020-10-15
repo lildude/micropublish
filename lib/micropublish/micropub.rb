@@ -1,20 +1,18 @@
+# frozen_string_literal: true
+
 module Micropublish
   class Micropub
-
     def initialize(micropub, token)
       @micropub = micropub
       @token = token
     end
 
     def try_syndicate_to(query)
-      begin
-        response = HTTParty.get(@micropub, query: query, headers: headers)
-        JSON.parse(response.body)['syndicate-to']
-      rescue
-      end
+      response = HTTParty.get(@micropub, query: query, headers: headers)
+      JSON.parse(response.body)['syndicate-to']
+    rescue StandardError
     end
 
-    # TODO: memoize getting the site config to reduce unnecessary roundtrips
     def destinations
       response = HTTParty.get(@micropub, query: { q: 'config' }, headers: headers)
       JSON.parse(response.body)['destination'] || []
@@ -36,34 +34,32 @@ module Micropublish
       Post.new(['h-entry'], body['properties'])
     end
 
-    def get_source(url, properties=nil)
+    def get_source(url, properties = nil)
       validate_url!(url)
       query = { q: 'source', url: url }
       query['properties[]'] = properties if properties
       uri = URI(@micropub)
-      uri.query = (uri.query.nil? ? "" : uri.query + "&") + URI.encode_www_form(query)
+      uri.query = (uri.query.nil? ? '' : uri.query + '&') + URI.encode_www_form(query)
       response = HTTParty.get(uri.to_s, headers: headers)
       begin
         body = JSON.parse(response.body)
       rescue JSON::ParserError
-        raise MicropubError.new("There was an error retrieving the source " +
-          "for \"#{url}\" from your endpoint. Please ensure you enter the " +
-          "URL for a valid MF2 post.")
+        raise MicropubError, 'There was an error retrieving the source ' \
+                             "for '#{url}' from your endpoint. Please ensure you enter the " \
+                             'URL for a valid MF2 post.'
       end
       if body.key?('error_description')
-        raise MicropubError.new("Micropub server returned an error: " +
-          "\"#{body['error_description']}\".")
+        raise MicropubError, 'Micropub server returned an error: ' \
+                             "'#{body['error_description']}'."
       elsif body.key?('error')
-        raise MicropubError.new("Micropub server returned an unspecified " +
-          "error. Please check your server's logs for details.")
+        raise MicropubError, 'Micropub server returned an unspecified ' \
+                             "error. Please check your server's logs for details."
       end
       body
     end
 
     def validate_url!(url)
-      unless Auth.valid_uri?(url)
-        raise MicropubError.new("\"#{url}\" is not a valid URL.")
-      end
+      raise MicropubError, "'#{url}' is not a valid URL." unless Auth.valid_uri?(url)
     end
 
     def headers
@@ -75,14 +71,13 @@ module Micropublish
     end
 
     def self.find_commands(params)
-      Hash[params.map { |k,v| [k,v] if k.start_with?('mp-') }.compact]
+      Hash[params.map { |k, v| [k, v] if k.start_with?('mp-') }.compact]
     end
-
   end
 
   class MicropubError < MicropublishError
-    def initialize(message, body=nil)
-      super("micropub", message, body)
+    def initialize(message, body = nil)
+      super('micropub', message, body)
     end
   end
 end

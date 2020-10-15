@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 module Micropublish
   class Server < Sinatra::Application
-
     configure do
       helpers Helpers
 
@@ -9,7 +10,7 @@ module Micropublish
       root_path = "#{File.dirname(__FILE__)}/../../"
       set :public_folder, "#{root_path}public"
       set :properties,
-        JSON.parse(File.read("#{root_path}config/properties.json"))
+          JSON.parse(File.read("#{root_path}config/properties.json"))
       set :readme, File.read("#{root_path}README.md")
       set :changelog, File.read("#{root_path}/changelog.md")
       set :help, File.read("#{public_folder}/help.md")
@@ -31,11 +32,11 @@ module Micropublish
 
     get '/' do
       if logged_in?
-        @title = "Dashboard"
+        @title = 'Dashboard'
         @types = settings.properties['types']['h-entry']
         erb :dashboard
       else
-        @title = "Sign in"
+        @title = 'Sign in'
         @about = markdown(settings.readme)
         erb :login
       end
@@ -44,20 +45,21 @@ module Micropublish
     get '/auth' do
       begin
         unless params.key?('me') && !params[:me].empty? &&
-            Auth.valid_uri?(params[:me])
+               Auth.valid_uri?(params[:me])
           raise "Missing or invalid value for \"me\": \"#{h params[:me]}\"."
         end
+
         unless params.key?('scope') && (
             params[:scope].include?('create') ||
             params[:scope].include?('post') ||
             params[:scope].include?('draft'))
-          raise "You must specify a valid scope, including at least one of " +
-            "\"create\", \"post\" or \"draft\"."
+          raise 'You must specify a valid scope, including at least one of ' \
+                '"create", "post" or "draft".'
         end
         unless endpoints = EndpointsFinder.new(params[:me]).find_links
           raise "Client could not find expected endpoints at \"#{h params[:me]}\"."
         end
-      rescue => e
+      rescue StandardError => e
         redirect_flash('/', 'danger', e.message)
       end
       # define random state string
@@ -68,31 +70,31 @@ module Micropublish
       session[:me] = params[:me]
       # redirect to auth endpoint
       query = URI.encode_www_form({
-        me: session[:me],
-        client_id: request.base_url,
-        state: session[:state],
-        scope: session[:scope],
-        redirect_uri: "#{request.base_url}/auth/callback",
-        response_type: "code"
-      })
+                                    me: session[:me],
+                                    client_id: request.base_url,
+                                    state: session[:state],
+                                    scope: session[:scope],
+                                    redirect_uri: "#{request.base_url}/auth/callback",
+                                    response_type: 'code'
+                                  })
       redirect "#{endpoints[:authorization_endpoint]}?#{query}"
     end
 
     get '/auth/callback' do
       unless session.key?(:me) && session.key?(:state) && session.key?(:scope)
-        redirect_flash('/', 'info', "Session has timed out. Please try again.")
+        redirect_flash('/', 'info', 'Session has timed out. Please try again.')
       end
       auth = Auth.new(session[:me], params[:code], session[:state],
-        session[:scope], "#{request.base_url}/auth/callback", request.base_url)
+                      session[:scope], "#{request.base_url}/auth/callback", request.base_url)
       endpoints_and_token_and_me = auth.callback
       # login and token grant was successful so store in session with me
       session.merge!(endpoints_and_token_and_me)
-      redirect_flash('/', 'success', %Q{You are now signed in successfully
+      redirect_flash('/', 'success', %(You are now signed in successfully
           as "#{endpoints_and_token_and_me[:me]}".
           Submit content to your site via Micropub using the links
           below. Please
           <a href="/about" class="alert-link">read&nbsp;the&nbsp;docs</a> for
-          more information and help.})
+          more information and help.))
     end
 
     get '/new' do
@@ -102,8 +104,7 @@ module Micropublish
       redirect '/new/h-entry/note'
     end
 
-    get %r{/new/h\-entry/(note|article|bookmark|reply|repost|like|rsvp|checkin)} do
-        |subtype|
+    get %r{/new/h\-entry/(note|article|bookmark|reply|repost|like|rsvp|checkin)} do |subtype|
       require_session
       render_new(subtype)
     end
@@ -118,11 +119,11 @@ module Micropublish
         # articles must be sent as json because content is an object
         format = params[:_subtype] == 'article' ? :json : default_format
         if params.key?('_preview')
-          if format == :json
-            @content = h @post.to_json(true)
-          else
-            @content = h format_form_encoded(@post.to_form_encoded)
-          end
+          @content = if format == :json
+                       h @post.to_json(true)
+                     else
+                       h format_form_encoded(@post.to_form_encoded)
+                     end
           if request.xhr?
             @content
           else
@@ -153,8 +154,7 @@ module Micropublish
       render_edit(subtype)
     end
 
-    get %r{/edit/h\-entry/(note|article|bookmark|reply|repost|like|rsvp|checkin)} do
-        |subtype|
+    get %r{/edit/h\-entry/(note|article|bookmark|reply|repost|like|rsvp|checkin)} do |subtype|
       require_session
       render_edit(subtype)
     end
@@ -171,15 +171,15 @@ module Micropublish
         @post = Post.new([params[:_type]], submitted_properties)
         @post.validate_properties!
         original_properties = if params.key?('_all')
-          micropub.source_all(params[:_url]).properties
-        else
-          subtype = params[:_subtype]
-          micropub.source_properties(params[:_url],
-            subtype_edit_properties(subtype)).properties
-        end
+                                micropub.source_all(params[:_url]).properties
+                              else
+                                subtype = params[:_subtype]
+                                micropub.source_properties(params[:_url],
+                                                           subtype_edit_properties(subtype)).properties
+                              end
         mp_commands = Micropub.find_commands(params)
         diff = Compare.new(original_properties, submitted_properties,
-          settings.properties['known']).diff_properties
+                           settings.properties['known']).diff_properties
         if params.key?('_preview')
           hash = {
             action: 'update',
@@ -233,13 +233,13 @@ module Micropublish
     end
 
     post '/settings' do
-      if params.key?('format') && ['json','form'].include?(params[:format])
+      if params.key?('format') && %w[json form].include?(params[:format])
         session[:format] = params[:format].to_sym
         format_label = params[:format] == 'json' ? 'JSON' : 'form-encoded'
         session[:flash] = {
           type: 'info',
-          message: "Format setting updated to \"#{format_label}\". New posts " +
-            "will be sent using #{format_label} format."
+          message: "Format setting updated to \"#{format_label}\". New posts " \
+                   "will be sent using #{format_label} format."
         }
       end
       redirect '/'
@@ -253,14 +253,14 @@ module Micropublish
       @content = markdown(settings.readme)
       # use a better heading for the about page
       @content.sub!('<h1 id="micropublish">Micropublish</h1>',
-        '<h1>About</h1>')
-      @title = "About"
+                    '<h1>About</h1>')
+      @title = 'About'
       erb :static
     end
 
     get '/changelog' do
       @content = markdown(settings.changelog)
-      @title = "Changelog"
+      @title = 'Changelog'
       erb :static
     end
 
@@ -277,9 +277,8 @@ module Micropublish
       when 404
         erb :redirect
       else
-        redirect_flash('/', 'danger', "There was an error redirecting to your" +
-          " new post's URL (#{@url}). Status code #{h(response.code)}."
-        )
+        redirect_flash('/', 'danger', 'There was an error redirecting to your' \
+          " new post's URL (#{@url}). Status code #{h(response.code)}.")
       end
     end
 
@@ -315,11 +314,9 @@ module Micropublish
       end
 
       def require_url
-        begin
-          micropub.validate_url!(params[:url])
-        rescue MicropublishError => e
-          redirect_flash('/', 'danger', e.message)
-        end
+        micropub.validate_url!(params[:url])
+      rescue MicropublishError => e
+        redirect_flash('/', 'danger', e.message)
       end
 
       def logout!
@@ -330,11 +327,11 @@ module Micropublish
       def new_request
         require_session
         Request.new(session[:micropub], session[:token],
-          session.key?('format') && session[:format] == :json)
+                    session.key?('format') && session[:format] == :json)
       end
 
       def format_form_encoded(content)
-        content.gsub(/&/,"\n&")
+        content.gsub(/&/, "\n&")
       end
 
       def render_new(subtype)
@@ -350,10 +347,10 @@ module Micropublish
         @required =
           settings.properties['types']['h-entry'][subtype]['required']
         @action_url = '/new'
-        @action_label = "Create"
+        @action_label = 'Create'
         # insert @username at start of content if replying to a tweet
         if @subtype == 'reply' && params.key?('in-reply-to') &&
-            !@post.properties.key?('content')
+           !@post.properties.key?('content')
           @post.properties['content'] =
             [tweet_reply_prefix(params['in-reply-to'])]
         end
@@ -362,16 +359,16 @@ module Micropublish
 
       def subtype_edit_properties(subtype)
         # for micropub.rocks only return content and category
-        return %w(content category) if params.key?('rocks')
+        return %w[content category] if params.key?('rocks')
 
         settings.properties['types']['h-entry'][subtype]['properties'] +
-          settings.properties['default'] + %w(syndication published)
+          settings.properties['default'] + %w[syndication published]
       end
 
       def render_edit(subtype)
         begin
           @post ||= micropub.source_properties(params[:url],
-            subtype_edit_properties(subtype))
+                                               subtype_edit_properties(subtype))
         rescue MicropubError => e
           redirect_flash('/', 'danger', e.message)
         end
@@ -385,7 +382,7 @@ module Micropublish
           settings.properties['types']['h-entry'][@subtype]['required']
         @edit = true
         @action_url = '/edit'
-        @action_label = "Update"
+        @action_label = 'Update'
         erb :form
       end
 
@@ -408,13 +405,13 @@ module Micropublish
 
       def redirect_post(url)
         session[:redirect] = url
-        redirect "/redirect"
+        redirect '/redirect'
       end
     end
 
     error do
       @error = env['sinatra.error']
-      header = %Q{
+      header = %{
         <p><a href="javascript:history.back()">&larr;&nbsp;Back</a></p>
         <h1>Something went wrong</h1><br>
         <div class="alert alert-danger">
@@ -424,6 +421,5 @@ module Micropublish
       @content = header + markdown(settings.help)
       erb :static
     end
-
   end
 end

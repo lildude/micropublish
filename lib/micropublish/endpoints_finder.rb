@@ -1,7 +1,8 @@
+# frozen_string_literal: true
+
 module Micropublish
   class EndpointsFinder
-
-    RELS = %w( micropub authorization_endpoint token_endpoint )
+    RELS = %w[micropub authorization_endpoint token_endpoint].freeze
 
     attr_reader :links
 
@@ -14,11 +15,12 @@ module Micropublish
       begin
         response = HTTParty.get(@url)
       rescue SocketError => e
-        raise AuthError.new("Client could not connect to \"#{@url}\".")
+        raise AuthError, "Client could not connect to \"#{@url}\"."
       end
       unless (200...300).include?(response.code)
         raise AuthError.new("#{response.code} status returned from \"#{@url}\".")
       end
+
       response
     end
 
@@ -43,22 +45,22 @@ module Micropublish
     def find_body_links(response)
       links = Nokogiri::HTML(response.body).css('link')
       links.each do |link|
-        if RELS.include?(link[:rel]) && !@links.key?(link[:rel].to_sym) &&
-            !link[:href].empty?
-          absolute_url = URI.join(@url, link[:href]).to_s
-          @links[link[:rel].to_sym] = absolute_url
-        end
+        next unless RELS.include?(link[:rel]) && !@links.key?(link[:rel].to_sym) &&
+                    !link[:href].empty?
+
+        absolute_url = URI.join(@url, link[:href]).to_s
+        @links[link[:rel].to_sym] = absolute_url
       end
     end
 
     def validate!
       RELS.each do |link|
-        unless @links.key?(link.to_sym)
-          raise AuthError.new(
-            "Client could not find \"#{link}\" in body or header from \"#{@url}\".")
-        end
+        next if @links.key?(link.to_sym)
+
+        raise AuthError.new(
+          "Client could not find \"#{link}\" in body or header from \"#{@url}\"."
+        )
       end
     end
-
   end
 end

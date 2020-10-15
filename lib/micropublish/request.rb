@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 module Micropublish
   class Request
-
     def initialize(micropub, token, is_json=false)
       @micropub = micropub
       @token = token
@@ -9,13 +10,13 @@ module Micropublish
 
     def create(post)
       body = if @is_json
-          { type: post.type, properties: post.properties }
-        else
-          # flatten single value arrays
-          { h: post.h_type }.merge(
-            Hash[post.properties.map { |k,v| [k, v.size == 1 ? v[0] : v] }]
-          )
-        end
+               { type: post.type, properties: post.properties }
+             else
+               # flatten single value arrays
+               { h: post.h_type }.merge(
+                 Hash[post.properties.map { |k, v| [k, v.size == 1 ? v[0] : v] }]
+               )
+             end
       response = send(body)
       case response.code.to_i
       when 201, 202
@@ -79,9 +80,8 @@ module Micropublish
 
     def handle_error(response_body)
       raise MicropublishError.new('request',
-        "There was an error making a request to your Micropub endpoint. " +
-        "The error received was: #{response_body}")
+                                  'There was an error making a request to your Micropub endpoint. ' \
+                                  "The error received was: #{response_body}")
     end
-
   end
 end

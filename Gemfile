@@ -1,20 +1,22 @@
+# frozen_string_literal: true
+
 source 'https://rubygems.org'
 
 ruby '2.6.5'
 
-gem 'sinatra'
+gem 'foreman'
+gem 'httparty'
+gem 'kramdown'
+gem 'link_header'
+gem 'nokogiri'
 gem 'puma'
 gem 'rack-contrib'
 gem 'rack-ssl'
-gem 'link_header'
-gem 'httparty'
-gem 'nokogiri'
-gem 'foreman'
-gem 'kramdown'
+gem 'sinatra'
 
 group :development do
-  gem 'shotgun'
   gem 'dotenv'
+  gem 'shotgun'
 end
 
 group :test do

@@ -1,15 +1,15 @@
-module Micropublish
+# frozen_string_literal: true
 
+module Micropublish
   class MicropublishError < StandardError
     attr_reader :type, :message, :body
-    def initialize(type, message, body=nil)
+    def initialize(type, message, body = nil)
       @type = type
       @message = message
       @body = body
       super(message)
     end
   end
-
 end
 
 require_relative 'micropublish/version'

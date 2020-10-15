@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
 ENV['RACK_ENV'] = 'test'
 
-require "bundler/setup"
+require 'bundler/setup'
 Bundler.require(:default, :test)
 
 require 'rack/test'
