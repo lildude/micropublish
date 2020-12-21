@@ -322,6 +322,10 @@ module Micropublish
         micropub.syndicate_to(subtype) || []
       end
 
+      def destinations
+        @destinations ||= config['destination'] || {}
+      end
+
       def logged_in?
         session.key?(:micropub)
       end
