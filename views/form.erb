@@ -344,7 +344,7 @@
         </p>
       </div>
 
-      <% if @all || @properties.include?('mp-destination') && !destinations.empty? %>
+      <% if @all || @properties.include?('mp-destination') || !destinations.empty? %>
          <div class="form-group">
            <label>
              Destination
