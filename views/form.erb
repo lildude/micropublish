@@ -352,6 +352,7 @@
            </label>
            <select class="form-control" id="mp-destination" name="mp-destination" style="margin-right: 20px;"
              <% if @required.include?('mp-destination') %>required<% end %>>
+             <option></option>
              <% destinations.each do |destination| %>
                <option value="<%= h destination['uid'] %>"><%= h destination['name'] %></option>
              <% end %>
