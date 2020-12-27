@@ -28,7 +28,7 @@ module Micropublish
     before do
       unless settings.production?
         session[:me] = 'http://localhost:4444/'
-        session[:micropub] = 'http://localhost:3333/micropub'
+        session[:micropub] = 'http://localhost:5000/micropub'
         session[:scope] = 'create update delete undelete'
       end
     end
@@ -58,7 +58,15 @@ module Micropublish
           raise "You must specify a valid scope, including at least one of " +
             "\"create\", \"post\" or \"draft\"."
         end
-        unless endpoints = EndpointsFinder.new(params[:me]).find_links
+        unless endpoints = if settings.production?
+            EndpointsFinder.new(params[:me]).find_links
+          else
+            {
+              micropub: 'http://localhost:5000/micropub',
+              authorization_endpoint: 'http://auth.localhost:4444/auth',
+              token_endpoint: 'http://auth.localhost:4444/token'
+            }
+          end
           raise "Client could not find expected endpoints at \"#{h params[:me]}\"."
         end
       rescue => e
@@ -72,6 +80,7 @@ module Micropublish
       session[:me] = params[:me]
       # code challenge from code verified
       session[:code_verifier] = SecureRandom.alphanumeric(100)
+      pp session
       code_challenge = Auth.generate_code_challenge(session[:code_verifier])
       # redirect to auth endpoint
       query = URI.encode_www_form({
@@ -88,11 +97,16 @@ module Micropublish
     end
 
     get '/auth/callback' do
+      logger.info "Start callback"
+      session.delete 'init'
       unless session.key?(:me) && session.key?(:state) && session.key?(:scope)
+        pp session
+        logger.info "Session timed out"
         redirect_flash('/', 'info', "Session has timed out. Please try again.")
       end
       unless params.key?(:state) && params[:state] == session[:state]
         session.clear
+        logger.info "state missing or diff"
         redirect_flash('/', 'info', "Callback \"state\" parameter is missing or does not match.")
       end
       auth = Auth.new(
@@ -102,6 +116,7 @@ module Micropublish
         request.base_url,
         session[:code_verifier]
       )
+      logger.info "About to do auth.callback"
       endpoints_and_token_and_me = auth.callback
       # login and token grant was successful so store in session with me
       session.merge!(endpoints_and_token_and_me)
