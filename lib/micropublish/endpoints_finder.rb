@@ -23,6 +23,13 @@ module Micropublish
     end
 
     def find_links
+      unless ENV['RACK_ENV'] == 'production'
+        return @links = {
+          micropub: 'http://localhost:5000/micropub',
+          authorization_endpoint: 'http://auth.localhost:4444/auth',
+          token_endpoint: 'http://auth.localhost:4444/token'
+        }
+      end
       response = get_url
       find_header_links(response)
       find_body_links(response)

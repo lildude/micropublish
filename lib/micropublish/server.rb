@@ -28,7 +28,7 @@ module Micropublish
     before do
       unless settings.production?
         session[:me] = 'http://localhost:4444/'
-        session[:micropub] = 'http://localhost:3333/micropub'
+        session[:micropub] = 'http://localhost:5000/micropub'
         session[:scope] = 'create update delete undelete'
       end
     end
@@ -58,7 +58,15 @@ module Micropublish
           raise "You must specify a valid scope, including at least one of " +
             "\"create\", \"post\" or \"draft\"."
         end
-        unless endpoints = EndpointsFinder.new(params[:me]).find_links
+        unless endpoints = if settings.production?
+            EndpointsFinder.new(params[:me]).find_links
+          else
+            {
+              micropub: 'http://localhost:5000/micropub',
+              authorization_endpoint: 'http://auth.localhost:4444/auth',
+              token_endpoint: 'http://auth.localhost:4444/token'
+            }
+          end
           raise "Client could not find expected endpoints at \"#{h params[:me]}\"."
         end
       rescue => e
@@ -88,6 +96,7 @@ module Micropublish
     end
 
     get '/auth/callback' do
+      session.delete 'init'
       unless session.key?(:me) && session.key?(:state) && session.key?(:scope)
         redirect_flash('/', 'info', "Session has timed out. Please try again.")
       end
@@ -320,6 +329,10 @@ module Micropublish
 
       def syndicate_to(subtype = nil)
         micropub.syndicate_to(subtype) || []
+      end
+
+      def destinations
+        @destinations ||= config['destination'] || {}
       end
 
       def logged_in?

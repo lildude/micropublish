@@ -344,6 +344,26 @@
         </p>
       </div>
 
+      <% if @all || @properties.include?('mp-destination') || !destinations.empty? %>
+         <div class="form-group">
+           <label>
+             Destination
+             <% if @required.include?('mp-destination') %><span class="required" title="required">*</span><% end %>
+           </label>
+           <select class="form-control" id="mp-destination" name="mp-destination" style="margin-right: 20px;"
+             <% if @required.include?('mp-destination') %>required<% end %>>
+             <option></option>
+             <% destinations.each do |destination| %>
+               <option value="<%= h destination['uid'] %>"><%= h destination['name'] %></option>
+             <% end %>
+           </select>
+         </div>
+         <p class="help-block">
+           Select the destination for your post.
+           <code>mp-destination</code>
+         </p>
+       <% end %>
+
       <% if !@edit %>
         <div class="form-group">
           <label>
